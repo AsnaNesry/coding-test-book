@@ -24,7 +24,7 @@ CREATE TABLE IF NOT EXISTS tasks (
     id SERIAL PRIMARY KEY,
     title TEXT NOT NULL,
     completed BOOLEAN NOT NULL,
-    createdat TIMESTAMP NOT NULL 
+    createdat TIMESTAMP NOT NULL DEFAULT NOW()
 )`
 
 func Connect() {
@@ -32,7 +32,7 @@ func Connect() {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	instance.SetMaxOpenConns(10)
+	instance.SetMaxOpenConns(10) //Database connection pooling
 	instance.SetMaxIdleConns(10)
 	instance.MustExec(book_schema) // Creates books table if not exists
 	instance.MustExec(task_schema) // Creates tasks table if not exists

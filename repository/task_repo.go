@@ -19,9 +19,10 @@ func (taskRepo TaskRepo) Create(task models.Task) error {
 	return err
 }
 
-func (taskRepo TaskRepo) GetAll(tasks []models.Task) error {
+func (taskRepo TaskRepo) GetAll() ([]models.Task, error) {
+	var tasks []models.Task
 	err := database.DB.Select(&tasks, "SELECT * FROM tasks")
-	return err
+	return tasks, err
 }
 
 func (taskRepo TaskRepo) Delete(taskID int) (int64, error) {
@@ -41,8 +42,8 @@ func (taskRepo TaskRepo) MarkTaskCompleted(id int) (int64, error) {
 	return updateCount, err
 }
 
-func (taskRepo TaskRepo) Update(task models.Task, taskID int) error {
-	query := "UPDATE tasks SET title = $1, completed = $2 WHERE id = $3"
-	_, err := database.DB.Exec(query, task.Title, task.Completed, taskID)
+func (taskRepo TaskRepo) Update(taskID int) error {
+	query := "UPDATE tasks SET completed = true WHERE id = $1"
+	_, err := database.DB.Exec(query, taskID)
 	return err
 }

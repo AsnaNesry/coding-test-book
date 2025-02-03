@@ -3,6 +3,7 @@ package repository
 import (
 	"coding_test/database"
 	"coding_test/models"
+	"fmt"
 )
 
 type BookRepo struct {
@@ -45,5 +46,6 @@ func (repo BookRepo) Delete(bookID int) (int64, error) {
 func (repo BookRepo) Update(book models.Book, bookID int) error {
 	query := "UPDATE books SET title = $1, author = $2, publishedyear = $3 WHERE id = $4"
 	_, err := database.DB.Exec(query, book.Title, book.Author, book.PublishedYear, bookID)
+	fmt.Printf("Updated book with id %d", bookID)
 	return err
 }

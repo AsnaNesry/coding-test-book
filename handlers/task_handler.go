@@ -36,9 +36,8 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 
 // function to read all the tasks
 func GetAllTasks(w http.ResponseWriter, r *http.Request) {
-	var tasks []models.Task
 	taskRepo := repository.GetTaskRepository()
-	err := taskRepo.GetAll(tasks)
+	tasks, err := taskRepo.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -76,13 +75,8 @@ func UpdateTaskByID(w http.ResponseWriter, r *http.Request) {
 	id := params["id"]
 	taskID, _ := strconv.Atoi(id)
 
-	var task models.Task
-	if err := json.NewDecoder(r.Body).Decode(&task); err != nil {
-		http.Error(w, "Invalid request payload", http.StatusBadRequest)
-		return
-	}
 	taskRepo := repository.GetTaskRepository()
-	err := taskRepo.Update(task, taskID)
+	err := taskRepo.Update(taskID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -132,6 +126,7 @@ func UpdateAllTask(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 	var response map[string]interface{}
+	w.Header().Set("Content-Type", "application/json")
 	if isSuccess {
 		response = map[string]interface{}{
 			"message": "All tasks marked completed",
@@ -144,7 +139,6 @@ func UpdateAllTask(w http.ResponseWriter, r *http.Request) {
 		}
 		w.WriteHeader(http.StatusInternalServerError)
 	}
-	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
 
