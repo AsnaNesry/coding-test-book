@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"coding_test/database"
 	"coding_test/models"
+	"coding_test/repository"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -18,9 +18,8 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
-	query := `INSERT INTO tasks (id, title, completed) VALUES ($1, $2, $3)`
-	_, err := database.DB.Exec(query, task.ID, task.Title, task.Completed)
+	taskRepo := repository.GetTaskRepository()
+	err := taskRepo.Create(task)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -38,7 +37,8 @@ func CreateTask(w http.ResponseWriter, r *http.Request) {
 // function to read all the tasks
 func GetAllTasks(w http.ResponseWriter, r *http.Request) {
 	var tasks []models.Task
-	err := database.DB.Select(&tasks, "SELECT * FROM tasks")
+	taskRepo := repository.GetTaskRepository()
+	err := taskRepo.GetAll(tasks)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
@@ -53,14 +53,8 @@ func DeleteTaskByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	taskID, _ := strconv.Atoi(id)
-	query := "DELETE FROM tasks WHERE id = $1"
-	result, err := database.DB.Exec(query, taskID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
-	rowsAffected, err := result.RowsAffected()
+	taskRepo := repository.GetTaskRepository()
+	rowsAffected, err := taskRepo.Delete(taskID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -87,9 +81,8 @@ func UpdateTaskByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
-	query := "UPDATE tasks SET title = $1, completed = $2 WHERE id = $3"
-	_, err := database.DB.Exec(query, task.Title, task.Completed, taskID)
+	taskRepo := repository.GetTaskRepository()
+	err := taskRepo.Update(task, taskID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -157,8 +150,7 @@ func UpdateAllTask(w http.ResponseWriter, r *http.Request) {
 
 func markTaskCompleted(wg *sync.WaitGroup, id int, ch chan<- QueryResult) {
 	defer wg.Done()
-	query := "UPDATE tasks SET completed = true WHERE id = $1"
-	queryResult, err := database.DB.Exec(query, id)
-	updateCount, _ := queryResult.RowsAffected()
+	taskRepo := repository.GetTaskRepository()
+	updateCount, err := taskRepo.MarkTaskCompleted(id)
 	ch <- QueryResult{Id: id, RowsAffected: updateCount, Err: err}
 }

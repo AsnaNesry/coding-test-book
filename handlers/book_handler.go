@@ -1,8 +1,8 @@
 package handlers
 
 import (
-	"coding_test/database"
 	"coding_test/models"
+	"coding_test/repository"
 	"encoding/json"
 	"net/http"
 	"strconv"
@@ -17,9 +17,8 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
-	query := `INSERT INTO books (id, title, author, publishedyear) VALUES ($1, $2, $3, $4)`
-	_, err := database.DB.Exec(query, book.ID, book.Title, book.Author, book.PublishedYear)
+	bookRepo := repository.GetBookRepository()
+	err := bookRepo.Create(book)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -36,8 +35,9 @@ func CreateBook(w http.ResponseWriter, r *http.Request) {
 
 // function to read all the books
 func GetAllBooks(w http.ResponseWriter, r *http.Request) {
-	books := []models.Book{}
-	err := database.DB.Select(&books, "SELECT * FROM books")
+
+	bookRepo := repository.GetBookRepository()
+	books, err := bookRepo.GetAll()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -54,8 +54,8 @@ func GetBookByID(w http.ResponseWriter, r *http.Request) {
 	bookID, _ := strconv.Atoi(id)
 
 	var book models.Book
-	query := "SELECT title, author, publishedyear FROM books WHERE id = $1"
-	err := database.DB.Get(&book, query, bookID)
+	bookRepo := repository.GetBookRepository()
+	err := bookRepo.GetById(book, bookID)
 	if err != nil {
 		http.Error(w, "Book not found", http.StatusNotFound)
 		return
@@ -70,14 +70,9 @@ func DeleteBookByID(w http.ResponseWriter, r *http.Request) {
 	params := mux.Vars(r)
 	id := params["id"]
 	bookID, _ := strconv.Atoi(id)
-	query := "DELETE FROM books WHERE id = $1"
-	result, err := database.DB.Exec(query, bookID)
-	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return
-	}
+	bookRepo := repository.GetBookRepository()
+	rowsAffected, err := bookRepo.Delete(bookID)
 
-	rowsAffected, err := result.RowsAffected()
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -104,9 +99,8 @@ func UpdateBookByID(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-
-	query := "UPDATE books SET title = $1, author = $2, publishedyear = $3 WHERE id = $4"
-	_, err := database.DB.Exec(query, book.Title, book.Author, book.PublishedYear, bookID)
+	bookRepo := repository.GetBookRepository()
+	err := bookRepo.Update(book, bookID)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
