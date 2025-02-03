@@ -102,16 +102,18 @@ type QueryResult struct {
 func UpdateAllTask(w http.ResponseWriter, r *http.Request) {
 
 	var ids []int
-	var wg sync.WaitGroup
+	var wg sync.WaitGroup //To wait for all gocoroutines
 	if err := json.NewDecoder(r.Body).Decode(&ids); err != nil {
 		http.Error(w, "Invalid request payload", http.StatusBadRequest)
 		return
 	}
-	ch := make(chan QueryResult)
+	ch := make(chan QueryResult) // To receive query result from each go routine
 	wg.Add(len(ids))
 	for _, id := range ids {
 		go markTaskCompleted(&wg, id, ch)
 	}
+
+	// goroutine to close the channel when all goroutines are completed
 	go func() {
 		wg.Wait()
 		close(ch)
@@ -143,8 +145,8 @@ func UpdateAllTask(w http.ResponseWriter, r *http.Request) {
 }
 
 func markTaskCompleted(wg *sync.WaitGroup, id int, ch chan<- QueryResult) {
-	defer wg.Done()
+	defer wg.Done() // Mark the groutine as done
 	taskRepo := repository.GetTaskRepository()
-	updateCount, err := taskRepo.MarkTaskCompleted(id)
-	ch <- QueryResult{Id: id, RowsAffected: updateCount, Err: err}
+	updateCount, err := taskRepo.MarkTaskCompleted(id)             // Update the record in database
+	ch <- QueryResult{Id: id, RowsAffected: updateCount, Err: err} // Update result in channel
 }
